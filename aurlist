@@ -1,0 +1,244 @@
+#!/bin/bash
+#################
+### aurlist #####
+version="0.4" ###
+### OS Hazard ###
+#################
+
+################
+## User vars
+verbose="2"
+saveDir="/usr/share/aurlist"
+saveFile="$saveDir/aurlist.txt"
+
+################
+## Scrape vars
+start="1"
+page="0"
+perpage="250"
+webpath='https://aur.archlinux.org/packages/?O=%start&C=0&SeB=nd&SB=n&SO=a&PP=%perpage&do_Search=Go'
+
+################
+## Color codes
+REPOCOLOR='\e[1;35m'
+PKGCOLOR='\e[1;39m'
+VERCOLOR='\e[1;32m'
+FLAGCOLOR='\e[1;31m'
+RESETCOLOR='\e[0m'
+
+################
+## Functions
+
+PRINT_USAGE()
+{
+  echo "$0 version $version";
+  echo "Download list of all AUR packages and search colorized list"
+  echo "";
+  echo "USAGE: aurlist [ACTION]";
+  echo "USAGE: aurlist [OPTION] [KEYWORD]";
+  echo "";
+  echo "ACTIONS:"
+  echo -e "\t-p, --print\tprint full list"
+  echo -e "\t-u, --update\tdownload AUR list"
+  echo -e "\t-v\t\tenable verbose mode"
+  echo -e "\t-vv\t\tenable very verbose mode"
+  echo "SEARCH OPTIONS:"
+  echo -e "\t[NONE]\t\tsearch by name and description"
+  echo -e "\t-x\t\tsearch by exact name"
+  echo -e "\t-n\t\tsearch by package name"
+  echo -e "\t-d\t\tsearch by description"
+  echo -e "\t-c\t\tsearch with custom commands"
+  echo -e "\t-r\t\tsearch with raw output"
+  echo -e "\t--nocolor\tdisable color output"
+  echo -e "\t-h, --help\tthis help"
+}
+
+SCRAPE_AUR()
+{
+  # Get page total 
+  url=$(echo "$webpath" | sed -e "s/%start/$start/g" -e "s/%perpage/$perpage/g");
+  pagetotal=$(curl -s "$url" 2>/dev/null | grep "packages found. Page 1 of" | awk NR==1 | \
+    awk -F "Page 1 of " '{print $2}' | awk -F "." '{print $1}');
+  [ "$verbose" = "1" -o "$verbose" = "2" ] && echo "==> pagetotal:$pagetotal"
+
+  # Sanity check
+  [ -z "$pagetotal" ] && echo "ERROR: Scrape failed" && exit 1;
+
+  # Loop
+  [ "$verbose" = "1" ] && echo -n "==> Scraping AUR ";
+  while [ "$page" -lt "$pagetotal" ]; do
+    # Verbose output
+    [ "$verbose" = "1" ] && echo -n ".";
+    [ "$verbose" = "2" ] && echo "==> start:$start, page:$((page+1)), perpage:$perpage";
+
+    url=$(echo "$webpath" | sed -e "s/%start/$start/g" -e "s/%perpage/$perpage/g");
+    scrape=$(curl -s "$url" 2>/dev/null | grep -A 3 '<a href="/packages/[0-9A-Za-z]' | grep -v ^-- );
+
+    FORMAT_LIST "$scrape"
+
+    list="$list\n$format"
+    page=$((page+1));
+    start=$((page*perpage));
+  done;
+  
+  [ "$verbose" = "1" ] && echo " [DONE]";
+}
+
+FORMAT_LIST()
+{
+  # Color
+  repocolor="\\${REPOCOLOR}";
+  pkgcolor="\\${PKGCOLOR}";
+  vercolor="\\${VERCOLOR}";
+  flagcolor="\\${FLAGCOLOR}";
+  flagalt=$(echo "$flagcolor" | sed 's/\[/\\\[/g');
+  resetcolor="\\${RESETCOLOR}";
+
+  [ "$color" = "false" ] && DISABLE_COLOR
+
+  # Formatting
+  format=$(echo "$@" | sed -e "s/<td class=""\"flagged""\">/${flagcolor}/g" -e 's/<td class="wrap">/:::::/g' | \
+    sed 's/<[^>]\+>//g' | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sed -e "1~4 s/^/${repocolor}aur\/${resetcolor}${pkgcolor}/g" \
+    -e "1~4 s/$/${resetcolor}/g" | sed -e "2~4 s/^${flagalt}.*/&${resetcolor}/g" -e "2~4 s/^[0-9A-Za-z].*/${vercolor}&${resetcolor}/g" \
+    -e '3~4 s/.*/\(&)/g' | paste - - - - | sed -e 's/\t/ /g' -e 's/:::::/\n    /g' -e 's|\\c|c|g');
+}
+
+SAVE_LIST()
+{
+  if [ ! -d "$saveDir" ]; then
+    mkdir -p "$saveDir" && chmod 777 "$saveDir"
+    [ ! -d "$saveDir" ] && sudo mkdir "$saveDir" && sudo chmod 777 "$saveDir"
+    [ ! -d "$saveDir" ] && exit 1;
+  fi
+
+  echo "$list" > "$saveFile"
+}
+
+DISABLE_COLOR()
+{
+  unset REPOCOLOR PKGCOLOR VERCOLOR FLAGCOLOR RESETCOLOR;
+  unset repocolor pkgcolor vercolor flagcolor resetcolor;
+  unset Repocolor Pkgcolor Vercolor Flagcolor Resetcolor;
+  sed -r "s/\\\e\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" "$saveFile" > "$saveDir/aurlist.lst"
+  saveFile="$saveDir/aurlist.lst"
+}
+
+PRINT_LIST()
+{
+  if [ -f "$saveFile" ]; then
+    [ "$verbose" = "1" -o "$verbose" = "2" ] && echo "==> Loading from file"
+    list=$(cat "$saveFile" 2>/dev/null);
+  else
+    SCRAPE_AUR;
+  fi
+
+  echo -e "$list"
+}
+
+SEARCH_EXACT()
+{
+  input="$@"
+  Repocolor=$(echo "$REPOCOLOR" | sed -e 's/\[/\\\[/g' -e 's/^/\\\\/g');
+  Pkgcolor=$(echo "$PKGCOLOR" | sed -e 's/\[/\\\[/g' -e 's/^/\\\\/g');
+  Vercolor=$(echo "$VERCOLOR" | sed -e 's/\[/\\\[/g' -e 's/^/\\\\/g');
+  Flagcolor=$(echo "$FLAGCOLOR" | sed -e 's/\[/\\\[/g' -e 's/^/\\\\/g');
+  Resetcolor=$(echo "$RESETCOLOR" | sed -e 's/\[/\\\[/g' -e 's/^/\\\\/g');
+  [ "$color" = "false" ] && DISABLE_COLOR
+  output=$(echo -e "$(grep -A 1 "${Repocolor}aur/${Resetcolor}${Pkgcolor}${input}${Resetcolor}" "$saveFile")");
+}
+
+SEARCH_NAME()
+{
+  input="$@"
+  Repocolor=$(echo "$REPOCOLOR" | sed -e 's/\[/\\\[/g' -e 's/^/\\\\/g');
+  Pkgcolor=$(echo "$PKGCOLOR" | sed -e 's/\[/\\\[/g' -e 's/^/\\\\/g');
+  Vercolor=$(echo "$VERCOLOR" | sed -e 's/\[/\\\[/g' -e 's/^/\\\\/g');
+  Flagcolor=$(echo "$FLAGCOLOR" | sed -e 's/\[/\\\[/g' -e 's/^/\\\\/g');
+  Resetcolor=$(echo "$RESETCOLOR" | sed -e 's/\[/\\\[/g' -e 's/^/\\\\/g');
+  [ "$color" = "false" ] && DISABLE_COLOR
+  output=$(echo -e "$(grep -A 1 "${Repocolor}aur/${Resetcolor}${Pkgcolor}.*${input}" "$saveFile")");
+}
+
+SEARCH_DESCRIPTION()
+{
+  IFS=$(echo -en "\n\b");
+  for input in $@; do
+    [ "$color" = "false" ] && DISABLE_COLOR
+    output=$(echo -e "$(grep -i -B 1 "^    .*${input}" "$saveFile")");
+    [ ! -z "$output" ] && echo "$output"
+  done;
+}
+
+SEARCH_KEYWORD()
+{
+  input="$@"
+  SEARCH_NAME "$input"
+  [ ! -z "$output" ] && echo "$output"
+  SEARCH_DESCRIPTION "$input"
+  [ ! -z "$output" ] && echo "$output"
+}
+
+SEARCH_CUSTOM()
+{
+  input="$@"
+  [ "$color" = "false" ] && DISABLE_COLOR
+  output=$(echo -e "$($@ "$saveFile")");
+}
+
+SEARCH_RAW()
+{
+  input="$@"
+  [ "$color" = "false" ] && DISABLE_COLOR
+  output=$(echo "$(grep -i -B 1 "^    .*${input}" "$saveFile")");
+}
+
+SEARCH_OUTPUT()
+{
+  if [ -z "$output" ]; then 
+    echo "No results" && exit 1
+  else
+    echo "$output"
+  fi
+}
+
+
+
+################
+## Actions
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+  PRINT_USAGE; exit 0;
+elif [ "$1" = "-v" ]; then
+  shift; verbose="1";
+elif [ "$1" = "-vv" ]; then
+  shift; verbose="2";
+elif [ "$1" = "--nocolor" ]; then
+  shift; color="false"
+fi 
+
+if [ -z "$1" ]; then
+  PRINT_USAGE; exit 1;
+elif [ "$1" = "-p" -o "$1" = "--print" ]; then
+  PRINT_LIST
+elif [ "$1" = "-u" -o "$1" = "--update" ]; then
+  SCRAPE_AUR; SAVE_LIST
+elif [ "$1" = "-x" ]; then
+  [ -z "$2" ] && PRINT_USAGE && exit 1
+  shift; SEARCH_EXACT "$@"; SEARCH_OUTPUT;
+elif [ "$1" = "-n" ]; then
+  [ -z "$2" ] && PRINT_USAGE && exit 1
+  shift; SEARCH_NAME "$@"; SEARCH_OUTPUT;
+elif [ "$1" = "-d" ]; then
+  [ -z "$2" ] && PRINT_USAGE && exit 1
+  shift; SEARCH_DESCRIPTION "$@"; SEARCH_OUTPUT;
+elif [ "$1" = "-c" ]; then
+  [ -z "$2" ] && PRINT_USAGE && exit 1
+  shift; SEARCH_CUSTOM "$@"; SEARCH_OUTPUT;
+elif [ "$1" = "-r" ]; then
+  [ -z "$2" ] && PRINT_USAGE && exit 1
+  shift; SEARCH_RAW "$@"; SEARCH_OUTPUT;
+else
+  SEARCH_KEYWORD "$@"
+fi
+
+### END ###
