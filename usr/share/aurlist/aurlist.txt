@@ -1,0 +1,30 @@
+\n\e[1;35maur/\e[0m\e[1;39m0ad-svn\e[0m \e[1;31m12972-1\e[0m (66) 
+    Cross-platform, 3D and historically-based real-time strategy game
+\e[1;35maur/\e[0m\e[1;39m0ad-svn-bin\e[0m \e[1;32m11863-7\e[0m (20) 
+    Cross-platform, 3D and historically-based real-time strategy game (openSUSE SVN prebuilt)
+\e[1;35maur/\e[0m\e[1;39m0verkill\e[0m \e[1;32m0.16-7\e[0m (96) 
+    Bloody 2D online deathmatch game created in ASCII-ART
+\e[1;35maur/\e[0m\e[1;39m0verkill-git\e[0m \e[1;32m20130806-1\e[0m (0) 
+    Bloody 2D action deathmatch-like game in  ASCII-ART
+\e[1;35maur/\e[0m\e[1;39m0xffff-git\e[0m \e[1;32m20130124-1\e[0m (0) 
+    0xFFFF utility implements a free userspace handler for the NOLO bootloader and extended features for flashing, dumping and getting information for the Nokia Internet Tablets.
+\e[1;35maur/\e[0m\e[1;39m115backup-gtk2\e[0m \e[1;32m1.0.0-1\e[0m (1) 
+    115backup with gtk2
+\e[1;35maur/\e[0m\e[1;39m115backup-gtk3\e[0m \e[1;32m1.0.0-1\e[0m (0) 
+    115backup with gtk3
+\e[1;35maur/\e[0m\e[1;39m115upload\e[0m \e[1;32m1.5.7.0-1\e[0m (4) 
+    115.com big file upload control
+\e[1;35maur/\e[0m\e[1;39m2299thegame\e[0m \e[1;32m1.0.5-1\e[0m (6) 
+    An old-school, point and click adventure game with 8-bit inspired, retro graphics.
+\e[1;35maur/\e[0m\e[1;39m2a\e[0m \e[1;32m20120401-1\e[0m (6) 
+    2a ncurses archiver
+\e[1;35maur/\e[0m\e[1;39m2bwm\e[0m \e[1;32m20130327-1\e[0m (3) 
+    A small floating window manager
+\e[1;35maur/\e[0m\e[1;39m2gis\e[0m \e[1;32m3.13.10.0-1\e[0m (95) 
+    Geographic Information System (GIS) for some Russian and Ukrainian cities.
+\e[1;35maur/\e[0m\e[1;39m2gis-arkhangelsk\e[0m \e[1;32m26-1\e[0m (0) 
+    Map of Arkhangelsk for 2GIS, October 2013
+\e[1;35maur/\e[0m\e[1;39m2gis-astrakhan\e[0m \e[1;32m95-1\e[0m (3) 
+    Map of Astrakhan for 2GIS, October 2013
+\e[1;35maur/\e[0m\e[1;39m2gis-barnaul\e[0m \e[1;32m104-1\e[0m (9) 
+    Map of Barnaul for 2GIS, October 2013
