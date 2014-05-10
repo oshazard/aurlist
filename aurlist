@@ -1,7 +1,7 @@
 #!/bin/bash
 #################
 ### aurlist #####
-version="0.4" ###
+version="0.5" ###
 ### OS Hazard ###
 #################
 
@@ -127,6 +127,7 @@ PRINT_LIST()
 {
   if [ -f "$saveFile" ]; then
     [ "$verbose" = "1" -o "$verbose" = "2" ] && echo "==> Loading from file"
+    [ "$color" = "false" ] && DISABLE_COLOR
     list=$(cat "$saveFile" 2>/dev/null);
   else
     SCRAPE_AUR;
